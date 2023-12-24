@@ -9,11 +9,9 @@ __login__obj = __login__(auth_token = "courier_auth_token",
                     lottie_url = 'https://assets2.lottiefiles.com/packages/lf20_jcikwtux.json')
 
 LOGGED_IN= __login__obj.build_login_ui()
-username= __login__obj.get_username()
 
 if LOGGED_IN == True:
 
-   st.markdown("Your Streamlit Application Begins here!")
-   st.markdown(st.session_state)
-   st.write(username)
+   st.markdown("### Login Success ")
+   st.markdown("#### Please continue to answer the question in the form.")
                                       

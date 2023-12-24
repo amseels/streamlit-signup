@@ -3,7 +3,6 @@ import json
 import os
 from streamlit_lottie import st_lottie
 from streamlit_option_menu import option_menu
-from streamlit_cookies_manager import EncryptedCookieManager
 from .utils import check_usr_pass
 from .utils import load_lottieurl
 from .utils import check_valid_name
@@ -16,6 +15,7 @@ from .utils import generate_random_passwd
 from .utils import send_passwd_in_email
 from .utils import change_passwd
 from .utils import check_current_passwd
+from .utils import validate_password_strength
 
 
 class __login__:
@@ -44,14 +44,7 @@ class __login__:
         self.logout_button_name = logout_button_name
         self.hide_menu_bool = hide_menu_bool
         self.hide_footer_bool = hide_footer_bool
-        self.lottie_url = lottie_url
-
-        self.cookies = EncryptedCookieManager(
-        prefix="streamlit_login_ui_yummy_cookies",
-        password='9d68d6f2-4258-45c9-96eb-2d6bc74ddbb5-d8f49cab-edbb-404a-94d0-b25b1d4a564b')
-
-        if not self.cookies.ready():
-            st.stop()   
+        self.lottie_url = lottie_url 
 
 
     def check_auth_json_file_exists(self, auth_filename: str) -> bool:
@@ -71,29 +64,12 @@ class __login__:
             present_files = sorted(present_files)
             if len(present_files) > 0:
                 return True
-        return False
-
-    def get_username(self):
-        if st.session_state['LOGOUT_BUTTON_HIT'] == False:
-            fetched_cookies = self.cookies
-            if '__streamlit_login_signup_ui_username__' in fetched_cookies.keys():
-                username=fetched_cookies['__streamlit_login_signup_ui_username__']
-                return username
- 
+        return False 
 
     def login_widget(self) -> None:
         """
         Creates the login widget, checks and sets cookies, authenticates the users.
         """
-
-        # Checks if cookie exists.
-        if st.session_state['LOGGED_IN'] == False:
-            if st.session_state['LOGOUT_BUTTON_HIT'] == False:
-                fetched_cookies = self.cookies
-                if '__streamlit_login_signup_ui_username__' in fetched_cookies.keys():
-                    if fetched_cookies['__streamlit_login_signup_ui_username__'] != '1c9a923f-fb21-4a91-b3f3-5f18e3f01182':
-                        st.session_state['LOGGED_IN'] = True
-
         if st.session_state['LOGGED_IN'] == False:
             st.session_state['LOGOUT_BUTTON_HIT'] = False 
 
@@ -102,7 +78,7 @@ class __login__:
                 username = st.text_input("Username", placeholder = 'Your unique username')
                 password = st.text_input("Password", placeholder = 'Your password', type = 'password')
 
-                st.markdown("###")
+                # st.markdown("###")
                 login_submit_button = st.form_submit_button(label = 'Login')
 
                 if login_submit_button == True:
@@ -113,8 +89,6 @@ class __login__:
 
                     else:
                         st.session_state['LOGGED_IN'] = True
-                        self.cookies['__streamlit_login_signup_ui_username__'] = username
-                        self.cookies.save()
                         del_login.empty()
                         st.experimental_rerun()
 
@@ -143,8 +117,8 @@ class __login__:
             unique_username_check = check_unique_usr(username_sign_up)
 
             password_sign_up = st.text_input("Password *", placeholder = 'Create a strong password', type = 'password')
+            password_strength, criteria = validate_password_strength(password_sign_up)
 
-            st.markdown("###")
             sign_up_submit_button = st.form_submit_button(label = 'Register')
 
             if sign_up_submit_button:
@@ -163,13 +137,22 @@ class __login__:
                 elif unique_username_check == None:
                     st.error('Please enter a non - empty Username!')
 
+                elif password_strength != 'STRONG':
+                    st.error("Please enter a stronger password.")
+                    for criterion, passed in criteria.items():
+                        color = "green" if passed else "red"
+                        symbol = "✔️" if passed else "❌"
+                        st.markdown(f"<span style='color: {color};'>{symbol} {criterion.capitalize()}</span>", unsafe_allow_html=True)
+
+
                 if valid_name_check == True:
                     if valid_email_check == True:
                         if unique_email_check == True:
                             if unique_username_check == True:
-                                register_new_usr(name_sign_up, email_sign_up, username_sign_up, password_sign_up)
-                                st.success("Registration Successful!")
-
+                                if password_strength == "STRONG":
+                                    register_new_usr(name_sign_up, email_sign_up, username_sign_up, password_sign_up)
+                                    st.success("Registration Successful!")
+                
 
     def forgot_password(self) -> None:
         """
@@ -194,39 +177,39 @@ class __login__:
                     st.success("Secure Password Sent Successfully!")
 
 
-    def reset_password(self) -> None:
-        """
-        Creates the reset password widget and after user authentication (email and the password shared over that email), 
-        resets the password and updates the same in the _secret_auth_.json file.
-        """
-        with st.form("Reset Password Form"):
-            email_reset_passwd = st.text_input("Email", placeholder= 'Please enter your email')
-            email_exists_check, username_reset_passwd = check_email_exists(email_reset_passwd)
+    # def reset_password(self) -> None:
+    #     """
+    #     Creates the reset password widget and after user authentication (email and the password shared over that email), 
+    #     resets the password and updates the same in the _secret_auth_.json file.
+    #     """
+    #     with st.form("Reset Password Form"):
+    #         email_reset_passwd = st.text_input("Email", placeholder= 'Please enter your email')
+    #         email_exists_check, username_reset_passwd = check_email_exists(email_reset_passwd)
 
-            current_passwd = st.text_input("Temporary Password", placeholder= 'Please enter the password you received in the email')
-            current_passwd_check = check_current_passwd(email_reset_passwd, current_passwd)
+    #         current_passwd = st.text_input("Temporary Password", placeholder= 'Please enter the password you received in the email')
+    #         current_passwd_check = check_current_passwd(email_reset_passwd, current_passwd)
 
-            new_passwd = st.text_input("New Password", placeholder= 'Please enter a new, strong password', type = 'password')
+    #         new_passwd = st.text_input("New Password", placeholder= 'Please enter a new, strong password', type = 'password')
 
-            new_passwd_1 = st.text_input("Re - Enter New Password", placeholder= 'Please re- enter the new password', type = 'password')
+    #         new_passwd_1 = st.text_input("Re - Enter New Password", placeholder= 'Please re- enter the new password', type = 'password')
 
-            st.markdown("###")
-            reset_passwd_submit_button = st.form_submit_button(label = 'Reset Password')
+    #         st.markdown("###")
+    #         reset_passwd_submit_button = st.form_submit_button(label = 'Reset Password')
 
-            if reset_passwd_submit_button:
-                if email_exists_check == False:
-                    st.error("Email does not exist!")
+    #         if reset_passwd_submit_button:
+    #             if email_exists_check == False:
+    #                 st.error("Email does not exist!")
 
-                elif current_passwd_check == False:
-                    st.error("Incorrect temporary password!")
+    #             elif current_passwd_check == False:
+    #                 st.error("Incorrect temporary password!")
 
-                elif new_passwd != new_passwd_1:
-                    st.error("Passwords don't match!")
+    #             elif new_passwd != new_passwd_1:
+    #                 st.error("Passwords don't match!")
             
-                if email_exists_check == True:
-                    if current_passwd_check == True:
-                        change_passwd(email_reset_passwd, new_passwd)
-                        st.success("Password Reset Successfully!")
+    #             if email_exists_check == True:
+    #                 if current_passwd_check == True:
+    #                     change_passwd(email_reset_passwd, new_passwd)
+    #                     st.success("Password Reset Successfully!")
                 
 
     def logout_widget(self) -> None:
@@ -241,7 +224,6 @@ class __login__:
             if logout_click_check == True:
                 st.session_state['LOGOUT_BUTTON_HIT'] = True
                 st.session_state['LOGGED_IN'] = False
-                self.cookies['__streamlit_login_signup_ui_username__'] = '1c9a923f-fb21-4a91-b3f3-5f18e3f01182'
                 del_logout.empty()
                 st.experimental_rerun()
         
@@ -256,7 +238,8 @@ class __login__:
                 menu_title = 'Navigation',
                 menu_icon = 'list-columns-reverse',
                 icons = ['box-arrow-in-right', 'person-plus', 'x-circle','arrow-counterclockwise'],
-                options = ['Login', 'Create Account', 'Forgot Password?', 'Reset Password'],
+                # options = ['Login', 'Create Account', 'Forgot Password?', 'Reset Password'],
+                options = ['Login', 'Create Account', 'Forgot Password?'],
                 styles = {
                     "container": {"padding": "5px"},
                     "nav-link": {"font-size": "14px", "text-align": "left", "margin":"0px"}} )
@@ -309,12 +292,6 @@ class __login__:
         
         if selected_option == 'Create Account':
             self.sign_up_widget()
-
-        if selected_option == 'Forgot Password?':
-            self.forgot_password()
-
-        if selected_option == 'Reset Password':
-            self.reset_password()
         
         self.logout_widget()
 

@@ -219,5 +219,27 @@ def check_current_passwd(email_reset_passwd: str, current_passwd: str) -> bool:
                     pass
     return False
 
+'''
+MODIFICAITON
+'''
+def validate_password_strength(password):
+    criteria = {
+        'Password length must be at least 8 characters': len(password) >= 8,
+        'At least one symbol': any(char in "!@#$%^&*()-+" for char in password),
+        'At least one uppercase letter': any(char.isupper() for char in password),
+        'At least one lowercase letter': any(char.islower() for char in password)
+    }
+
+    criteria_count = sum(criteria.values())
+
+    if criteria_count == 4:
+        strength = 'STRONG'
+    elif 2 <= criteria_count < 4:
+        strength = 'MEDIUM'
+    else:
+        strength = 'WEAK'
+
+    return strength, criteria
+
 # Author: Gauri Prabhakar
 # GitHub: https://github.com/GauriSP10/streamlit_login_auth_ui
