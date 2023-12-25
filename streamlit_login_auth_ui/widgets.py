@@ -70,6 +70,7 @@ class __login__:
         """
         Creates the login widget, checks and sets cookies, authenticates the users.
         """
+        st.markdown("### LOGIN")
         if st.session_state['LOGGED_IN'] == False:
             st.session_state['LOGOUT_BUTTON_HIT'] = False 
 
@@ -105,6 +106,7 @@ class __login__:
         """
         Creates the sign-up widget and stores the user info in a secure way in the _secret_auth_.json file.
         """
+        st.markdown("### CREATE ACCOUNT")
         with st.form("Sign Up Form"):
             
             username_sign_up = st.text_input("Username *", placeholder = 'Enter a unique username')
